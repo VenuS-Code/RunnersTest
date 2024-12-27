@@ -1,0 +1,46 @@
+name: Lock Runner for All Jobs
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  lock-runner:
+    runs-on: ubuntu-latest # Adjust to your group of runners
+    outputs:
+      runner-name: ${{ steps.get-runner.outputs.runner-name }}
+    steps:
+      - name: Get Runner Name
+        id: get-runner
+        run: |
+          echo "runner-name=${RUNNER_NAME}" >> $GITHUB_ENV
+          echo "runner-name=${{ RUNNER_NAME }}" >> $GITHUB_ENV
+          echo "::set-output name=runner-name::${RUNNER_NAME}"
+        env:
+          RUNNER_NAME: ${{ runner.name }} # Captures the name of the current runner
+        # Expose the runner name as an output for subsequent jobs
+          
+
+  job-1:
+    runs-on: [self-hosted]
+    needs: lock-runner
+    if: always()
+     
+    steps:
+      - name: Job 1 on the same runner
+        run: echo "Running on the locked runner"
+
+  job-2:
+    needs: lock-runner
+    runs-on: ${{ needs.lock-runner.outputs.runner-name }}
+    steps:
+      - name: Job 2 on the same runner
+        run: echo "Running on the locked runner"
+
+  job-3:
+    needs: lock-runner
+    runs-on: ${{ needs.lock-runner.outputs.runner-name }}
+    steps:
+      - name: Job 3 on the same runner
+        run: echo "Running on the locked runner"
